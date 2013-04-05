@@ -3,7 +3,16 @@
 
 (declare image-data)
 
-(def empty-pixel {:r 0 :g 0 :b 0 :a 0})
+(def empty-pixel [0 0 0 0])
+
+(defn pixel-array
+  "Convert data into a Uint8ClampedArray."
+  [data]
+  (cond
+    (= js/Uint8ClampedArray (type data)) data
+    (coll? data) (if (map? (first data))
+                  (js/Uint8ClampedArray. (into-array (flatten (map vals data))))
+                  (js/Uint8ClampedArray. (into-array (flatten data))))))
 
 (defn make-canvas
   "Create a canvas HTML tag. If width and height are provided then they will be
@@ -78,12 +87,31 @@
   (-image-data [{:keys [width height data]}]
     (when (and width height data)
       (let [blank (image-data width height)]
-        (.set (.-data blank) (if (= js/Uint8ClampedArray (type data))
+        (.set (.-data blank) (pixel-array data)
+              #_(if (= js/Uint8ClampedArray (type data))
                                data
-                               (js/Uint8ClampedArray. (into-array data))))
+                               (js/Uint8ClampedArray.
+                                 (into-array (if) data))))
         blank)))
 
   )
+
+;; IPixel Protocol
+;; A protocol for accessing the color channels from a pixel.
+
+(defprotocol IPixel
+  (red [pixel] "The red component of the pixel.")
+  (green [pixel] "The green component of the pixel.")
+  (blue [pixel] "The blue component of the pixel.")
+  (alpha [pixel] "The alpha component of the pixel."))
+
+(extend-protocol IPixel
+  js/Array
+  js/Uint8ClampedArray
+  (red [a] (aget a 0))
+  (green [a] (aget a 1))
+  (blue [a] (aget a 2))
+  (alpha [a] (aget a 3)))
 
 ;; IBitmap Protocol
 ;; Provides a protocol for accessing dimensions and pixel data of an image.
@@ -93,28 +121,11 @@
   (height [bitmap] "The height of the bitmap in pixels.")
   (data [bitmap] "The pixel data of the image." ))
 
-(defn- pixel-count
-  [arr n]
-  (- (/ (alength arr) 4) n))
-
-(defn- get-pixel
-  [arr n]
-  (when (< -1 (pixel-count arr n))
-    (let [offset (* n 4)]
-      {:r (aget arr offset)
-       :g (aget arr (+ 1 offset))
-       :b (aget arr (+ 2 offset))
-       :a (aget arr (+ 3 offset))})))
-
 ;; ImageDataSeq
 ;; Allows seq functions to be called on an ImageData.
 
 (deftype ImageDataSeq [w h arr i]
-  IBitmap
-  (width [_] w)
-  (height [_] h)
-  (data [_] arr)
-  
+
   ;Object
   ;(toString [this]
   ;  (pr-str this))
@@ -123,12 +134,27 @@
   ;(-pr-writer [coll writer opts]
   ;  (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
 
+  IPixel
+  (red [_] (aget arr (* 4 i)))
+  (green [_] (aget arr (+ 1 (* 4 i))))
+  (blue [_] (aget arr (+ 2 (* 4 i))))
+  (alpha [_] (aget arr (+ 3 (* 4 i))))
+
+  IBitmap
+  (width [_] w)
+  (height [_] h)
+  (data [_] arr)
+  
   ISeqable
   (-seq [this] this)
 
   ASeq
   ISeq
-  (-first [_] (get-pixel arr i))
+  (-first [_] (let [offset (* 4 i)]
+                [(aget arr offset)
+                 (aget arr (+ 1 offset))
+                 (aget arr (+ 2 offset))
+                 (aget arr (+ 3 offset))]))
   (-rest [_] (if (< (* (inc i) 4) (alength arr))
                  (ImageDataSeq. w h arr (inc i))
                  (list)))
@@ -139,15 +165,18 @@
                  nil))
 
   ICounted
-  (-count [_] (pixel-count arr i))
+  (-count [_] (- (/ (alength arr) 4) i)) 
 
   IIndexed
   (-nth [coll n]
     (-nth coll n empty-pixel))
   (-nth [coll n not-found]
-    (let [i (+ n i)]
-      (if (< (* i 4) (alength arr))
-        (get-pixel arr i)
+    (let [off (* 4 (+ n i))]
+      (if (< i (alength arr))
+        [(aget arr i)
+         (aget arr (+ 1 i))
+         (aget arr (+ 2 i))
+         (aget arr (+ 3 i))]
         not-found)))
 
   ISequential
@@ -195,12 +224,13 @@
   (-nth [coll n]
     (-nth coll n empty-pixel))
   (-nth [coll n not-found]
-    (let [pix (.-data coll)]
+    (let [pix (.-data coll)
+          offset (* 4 n)]
       (if (and (>= n 0) (< n (count coll)))
-        {:r (aget pix n)
-         :g (aget pix (+ 1 n))
-         :b (aget pix (+ 2 n))
-         :a (aget pix (+ 3 n))}
+        [(aget pix offset)        ; red
+         (aget pix (+ 1 offset))  ; green
+         (aget pix (+ 2 offset))  ; blue
+         (aget pix (+ 3 offset))] ; alpha
         not-found)))
 
   ILookup

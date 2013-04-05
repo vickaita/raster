@@ -4,6 +4,17 @@
             [goog.dom :as dom])
   (:require-macros [cemerick.cljs.test :refer (is deftest run-tests testing)]))  
 
+(deftest pixel-array-test
+  (testing "from a range"
+    (let [p (r/pixel-array (range 8))]
+      (is (= js/Uint8ClampedArray (type p)))
+      (is (= 8 (alength p)))))
+  (testing "from a seq"
+    (let [p (r/pixel-array (map identity (range 8)))]
+      (is (= js/Uint8ClampedArray (type p)))
+      (is (= 8 (alength p)))))
+  )
+
 (deftest make-canvas-test
   (let [c (r/make-canvas 10 20)]
     (testing "creates the correct html tag"
@@ -82,13 +93,14 @@
         (is (= js/Uint8ClampedArray (type p)))
         (is (= (* 10 20 4) (alength p)))))
     (testing "IIndexed"
-      (is (= {:r 0 :g 1 :b 2 :a 3} (-nth i 0)))
-      (is (= {:r 0 :g 0 :b 0 :a 0} (-nth i -1))))
+      (is (= [0 1 2 3] (-nth i 0)))
+      (is (= [4 5 6 7] (-nth i 1)))
+      (is (= [0 0 0 0] (-nth i -1))))
       (is (= "oops" (-nth i -1 "oops")))
     (testing "ILookup"
-      (is (= {:r 0 :g 1 :b 2 :a 3} (-lookup i [0 0])))
-      (is (= {:r 55 :g 56 :b 57 :a 58} (-lookup i [5 5])))
-      (is (= {:r 0 :g 0 :b 0 :a 0} (-lookup i [-1 0])))
+      (is (= [0 1 2 3] (-lookup i [0 0])))
+      (is (= [44 45 46 47] (-lookup i [1 1])))
+      (is (= [0 0 0 0] (-lookup i [-1 0])))
       (is (= "oops" (-lookup i [0 -1] "oops")))
       )
     (testing "IAssociative"
@@ -98,20 +110,18 @@
       (is (not (-contains-key? i [-1 0])))
       )
     (testing "IFn"
-      (is (= {:r 0 :g 1 :b 2 :a 3} (i [0 0])))
+      (is (= [0 1 2 3] (i [0 0])))
       (is (= "oops" (i [-1 0] "oops")))
       )
     (testing "ISeqable"
       (is (seq? (-seq i)))
-      (is (= {:r 0 :g 1 :b 2 :a 3} (first i)))
+      (is (= [0 1 2 3] (first i)))
       )
     ))
 
-#_(deftest seq-functions-test
+(deftest seq-functions-test
   (let [i (r/image-data {:width 2 :height 1 :data (range 8)})]
     (testing "map"
-      (is (= '({:a 3, :b 2, :g 1, :r 0}
-               {:a 7, :b 6, :g 5, :r 4})
-             (map identity i))))))
+      (is (= '([0 1 2 3] [4 5 6 7]) (map identity i))))))
 
 (test-ns 'vickaita.raster.core-test)
