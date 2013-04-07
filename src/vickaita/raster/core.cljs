@@ -113,6 +113,12 @@
   (blue [a] (aget a 2))
   (alpha [a] (aget a 3)))
 
+  PersistentVector
+  (red [a] (nth a 0))
+  (green [a] (nth a 1))
+  (blue [a] (nth a 2))
+  (alpha [a] (nth a 3)))
+
 ;; IBitmap Protocol
 ;; Provides a protocol for accessing dimensions and pixel data of an image.
 
