@@ -245,13 +245,6 @@
          (>= y 0)
          (< x (.-width coll))
          (< y (.-height coll))))
-  ;(-assoc  [coll [x y] [r g b a]]
-  ;  (let [offset (* x y)
-  ;        pix (pixels coll)]
-  ;    (aset pix offset r)
-  ;    (aset pix (+ 1 offset) g)
-  ;    (aset pix (+ 2 offset) b)
-  ;    (aset pix (+ 3 offset) a)))
 
   IFn
   (-invoke
