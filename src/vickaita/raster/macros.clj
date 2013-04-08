@@ -1,26 +1,74 @@
 (ns vickaita.raster.macros)
 
-(defmacro defpixelmap
-  [fname form & body]
-  `(defn ~fname
-     [src-img#]
-     (let [w# (vickaita.raster.core/width src-img#)
-           h# (vickaita.raster.core/height src-img#)
-           c# (count src-img#)  
-           src-data# (vickaita.raster.core/data src-img#)
-           dst-img# (vickaita.raster.core/image-data w# h#)
-           dst-data# (vickaita.raster.core/data dst-img#)]
-       (dotimes [i# c#]
-         (let [red-offset# (* 4 i#)
-               green-offset# (+ 1 red-offset#)
-               blue-offset# (+ 2 red-offset#)
-               alpha-offset# (+ 3 red-offset#)
-               ~(nth form 0) (aget src-data# red-offset#)
-               ~(nth form 1) (aget src-data# green-offset#)
-               ~(nth form 2) (aget src-data# blue-offset#)
-               ~(nth form 3) (aget src-data# alpha-offset#)]
-           (aset dst-data# red-offset# ~(nth (last body) 0))
-           (aset dst-data# green-offset# ~(nth (last body) 1))
-           (aset dst-data# blue-offset# ~(nth (last body) 2))
-           (aset dst-data# alpha-offset# ~(nth (last body) 3))))
-       dst-img#)))
+(defn- vec4?
+  "Predicate to check if expr is a vector of four elements."
+  [expr]
+  (and (vector? expr)
+       (= 4 (count expr))))
+
+(defmacro dopixel
+  [[form src-img] body]
+  `(let [w# (vickaita.raster.core/width ~src-img)
+         h# (vickaita.raster.core/height ~src-img)
+         src-data# (vickaita.raster.core/data ~src-img)
+         dst-img# (vickaita.raster.core/image-data w# h#)
+         dst-data# (vickaita.raster.core/data dst-img#)
+         n# (dec (* 4 (count ~src-img)))]
+     (loop [r# 0 g# 1 b# 2 a# 3]
+       (let [~(nth form 0) (aget src-data# r#)
+             ~(nth form 1) (aget src-data# g#)
+             ~(nth form 2) (aget src-data# b#)
+             ~(nth form 3) (aget src-data# a#)]
+         (aset dst-data# r# ~(nth body 0))
+         (aset dst-data# g# ~(nth body 1))
+         (aset dst-data# b# ~(nth body 2))
+         (aset dst-data# a# ~(nth body 3)))
+       (when (< a# n#)
+         (recur (+ 4 r#) (+ 4 g#) (+ 4 b#) (+ 4 a#))))
+     dst-img#))
+
+(comment 
+
+  (defmacro dopixel
+    [[form src-img] & body]
+    (if (and (= 1 (count body)) (vec4? (first body)))
+      `(let [w# (vickaita.raster.core/width ~src-img)
+             h# (vickaita.raster.core/height ~src-img)
+             src-data# (vickaita.raster.core/data ~src-img)
+             dst-img# (vickaita.raster.core/image-data w# h#)
+             dst-data# (vickaita.raster.core/data dst-img#)
+             n# (dec (* 4 (count ~src-img)))]
+         (loop [r# 0 g# 1 b# 2 a# 3]
+           (let [~(nth form 0) (aget src-data# r#)
+                 ~(nth form 1) (aget src-data# g#)
+                 ~(nth form 2) (aget src-data# b#)
+                 ~(nth form 3) (aget src-data# a#)]
+             (aset dst-data# r# ~(nth (first body) 0))
+             (aset dst-data# g# ~(nth (first body) 1))
+             (aset dst-data# b# ~(nth (first body) 2))
+             (aset dst-data# a# ~(nth (first body) 3)))
+           (when (< a# n#)
+             (recur (+ 4 r#) (+ 4 g#) (+ 4 b#) (+ 4 a#))))
+         dst-img#)
+      `(let [w# (vickaita.raster.core/width ~src-img)
+             h# (vickaita.raster.core/height ~src-img)
+             src-data# (vickaita.raster.core/data ~src-img)
+             dst-img# (vickaita.raster.core/image-data w# h#)
+             dst-data# (vickaita.raster.core/data dst-img#)
+             n# (dec (* 4 (count ~src-img)))]
+         (loop [r# 0 g# 1 b# 2 a# 3]
+           (let [~(nth form 0) (aget src-data# r#)
+                 ~(nth form 1) (aget src-data# g#)
+                 ~(nth form 2) (aget src-data# b#)
+                 ~(nth form 3) (aget src-data# a#)
+                 [rv# gv# bv# av# (do ~@body)]]
+             (aset dst-data# r# rv#)
+             (aset dst-data# g# gv#)
+             (aset dst-data# b# bv#)
+             (aset dst-data# a# av#))
+           (when (< a# n#)
+             (recur (+ 4 r#) (+ 4 g#) (+ 4 b#) (+ 4 a#))))
+         dst-img#)
+      ))
+
+)
