@@ -95,6 +95,7 @@
     (testing "IIndexed"
       (is (= [0 1 2 3] (-nth i 0)))
       (is (= [4 5 6 7] (-nth i 1)))
+      (is (= "oops" (-nth i 200 "oops")))
       (is (= [0 0 0 0] (-nth i -1))))
       (is (= "oops" (-nth i -1 "oops")))
     (testing "ILookup"
