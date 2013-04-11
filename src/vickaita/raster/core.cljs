@@ -111,7 +111,7 @@
   (red [a] (aget a 0))
   (green [a] (aget a 1))
   (blue [a] (aget a 2))
-  (alpha [a] (aget a 3)))
+  (alpha [a] (aget a 3))
 
   PersistentVector
   (red [a] (nth a 0))
@@ -178,11 +178,11 @@
     (-nth coll n empty-pixel))
   (-nth [coll n not-found]
     (let [off (* 4 (+ n i))]
-      (if (< i (alength arr))
-        [(aget arr i)
-         (aget arr (+ 1 i))
-         (aget arr (+ 2 i))
-         (aget arr (+ 3 i))]
+      (if (< off (alength arr))
+        [(aget arr off)
+         (aget arr (+ 1 off))
+         (aget arr (+ 2 off))
+         (aget arr (+ 3 off))]
         not-found)))
 
   ISequential
