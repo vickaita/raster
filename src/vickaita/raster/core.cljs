@@ -243,7 +243,10 @@
   (-lookup [coll k]
     (-lookup coll k empty-pixel))
   (-lookup [coll [x y] not-found]
-    (-nth coll (+ x (* y (.-width coll))) not-found))
+    (if (and (>= x 0) (>= y 0)
+             (< x (.-width coll)) (< y (.-height coll)))
+      (-nth coll (+ x (* y (.-width coll))) not-found)
+      not-found))
 
   IAssociative
   (-contains-key? [coll [x y]]
