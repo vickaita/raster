@@ -21,9 +21,26 @@ operating on ImageData are choosen, but not to the detriment of a flexible API.
 
 ## Usage
 
+### Creating an ImageData object
+
 Create an ImageData object with the `image-data` function provided in
 `vickaita.raster.core`. You can pass it an img element, a canvas element, or a
 2d canvas context.
+
+    (ns raster.example
+      (:require [vickaita.raster.core :as r]
+                [goog.dom :as dom]))
+
+    ;; From an HTMLImageElement
+    (r/image-data (dom/getElement "an-img"))
+
+    ;; From an HTMLCanvasElement
+    (r/image-data (dom/getElement "a-canvas"))
+
+    ;; From a map literal
+    (r/image-data {:width 10
+                   :height 10
+                   :data (take 400 (repeatedly (partial rand-int 256)))})
 
 ## License
 
