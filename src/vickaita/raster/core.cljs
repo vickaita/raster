@@ -1,5 +1,7 @@
 (ns vickaita.raster.core
-  (:require [goog.dom :as dom]))
+  (:require [vickaita.raster.geometry :refer [surround pixel-groups
+                                              normalize-matrix]]
+            [goog.dom :as dom]))
 
 (declare image-data)
 
@@ -267,3 +269,29 @@
     (ImageDataSeq. (.-width coll) (.-height coll) (.-data coll) 0))
 
 )
+
+(defn convolute
+  "Apply a convolution matrix to an image.
+
+  The matrix should be a square and it should have an odd route (e.g. 9 and 25
+  are ok, but 16 and 36 are not). The cells of the matrix can be composed of
+  integers (negative or positive) or of a 4 element vector with each component
+  of the vector representing one of the red, green, blue, and alpha channels --
+  in that order. The center cell of the matrix corresponds to the current
+  pixel and the other cells represent the surrounding pixels."
+  [matrix divisor offset src-img]
+  (let [w (width src-img)
+        h (height src-img)
+        m (normalize-matrix matrix)
+        radius (Math/floor (/ (Math/sqrt (count matrix)) 2))
+        src-data (data src-img)
+        ;dst-img (image-data w h)
+        ;dst-data (data dst-img) 
+        pxlgrps (pixel-groups w h radius)
+        pgs (map (partial map src-img) pxlgrps)
+        mult (map (partial map (partial map *)) pgs (repeat m))
+        summed (map (partial reduce (partial map +)) mult)
+        divved (map (partial map #(/ % divisor)) summed)]
+    (image-data {:width w
+                 :height h
+                 :data divved})))
