@@ -42,6 +42,13 @@ Create an ImageData object with the `image-data` function provided in
                    :height 10
                    :data (take 400 (repeatedly (partial rand-int 256)))})
 
+### dopixel macro
+
+The `dopixel` macro operates on an image one pixel at a time.
+
+    (dopixel [[r g b a] img]
+             [(+ 1 r) (+ 1 g) (+ 1 b) a])
+
 ## License
 
 Copyright © 2013 Vick Aita
