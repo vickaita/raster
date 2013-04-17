@@ -16,9 +16,5 @@
 
 (defn normalize-matrix
   [m]
-  ;; Handle the center cell of the matrix separately.
-  (let [ci (inc (Math/floor (/ (count m) 2)))
-        cv (nth m ci)
-        cm (if (number? cv) (assoc m ci [cv cv cv 1]) m)]
-    (map (fn [i] (if (number? i) [i i i i] i)) cm)))
+  (map #(if (number? %) [% % % %] %) m))
 
