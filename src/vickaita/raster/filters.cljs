@@ -5,5 +5,5 @@
 
 (defn invert
   [img]
-  (dopixel [[r g b a] img]
+  (dopixels [[r g b a] img]
            [(- 255 r) (- 255 g) (- 255 b) a]))
