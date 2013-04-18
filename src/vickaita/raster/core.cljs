@@ -1,6 +1,6 @@
 (ns vickaita.raster.core
-  (:require [vickaita.raster.geometry :refer [surround pixel-groups
-                                              normalize-matrix]]
+  (:require [vickaita.raster.geometry :refer [surround normalize-matrix
+                                              pixel-groups convolution-table]]
             [goog.dom :as dom]))
 
 (declare image-data)
@@ -282,16 +282,39 @@
   [matrix divisor offset src-img]
   (let [w (width src-img)
         h (height src-img)
-        m (normalize-matrix matrix)
-        radius (Math/floor (/ (Math/sqrt (count matrix)) 2))
-        src-data (data src-img)
-        ;dst-img (image-data w h)
-        ;dst-data (data dst-img) 
-        pxlgrps (pixel-groups w h radius)
-        pgs (map (partial map src-img) pxlgrps)
-        mult (map (partial map (partial map *)) pgs (repeat m))
-        summed (map (partial reduce (partial map +)) mult)
-        divved (map (partial map #(/ % divisor)) summed)]
-    (image-data {:width w
-                 :height h
-                 :data divved})))
+        sdata (data src-img)
+        dimg (image-data w h)
+        ddata (data dimg)
+        ct (convolution-table matrix)
+        ct-iterations (/ (count ct) 6)]
+    (dotimes [dy h]
+      (dotimes [dx w]
+        (let [doffset (* 4 (+ dx (* w dy)))
+              rd (+ 0 doffset)
+              gd (+ 1 doffset)
+              bd (+ 2 doffset)
+              ad (+ 3 doffset)]
+          (dotimes [i ct-iterations]
+            (let [p (* 6 i) ; p is an offset in the convolution table
+                  sx (+ dx (aget ct p))
+                  sy (+ dy (aget ct (inc p)))]
+              (if (and (<= 0 sx) (< sx w)
+                       (<= 0 sy) (< sy h))
+                (let [soffset (* 4 (+ sx (* w sy)))
+                      rs (+ 0 soffset)
+                      gs (+ 1 soffset)
+                      bs (+ 2 soffset)
+                      as (+ 3 soffset)
+                      rm (aget ct (+ 2 p))
+                      gm (aget ct (+ 3 p))
+                      bm (aget ct (+ 4 p))
+                      am (aget ct (+ 5 p))]
+                  (aset ddata rd (+ (/ (* rm (aget sdata rs)) divisor) (aget ddata rd)))
+                  (aset ddata gd (+ (/ (* gm (aget sdata gs)) divisor) (aget ddata gd)))
+                  (aset ddata bd (+ (/ (* bm (aget sdata bs)) divisor) (aget ddata bd)))
+                  (aset ddata ad (+ (/ (* am (aget sdata as)) divisor) (aget ddata ad)))))))
+          (aset ddata rd (+ offset (aget ddata rd)))
+          (aset ddata gd (+ offset (aget ddata gd)))
+          (aset ddata bd (+ offset (aget ddata bd)))
+          (aset ddata ad (+ offset (aget ddata ad))))))
+    dimg))
