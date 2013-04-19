@@ -298,8 +298,12 @@
             (let [p (* 6 i) ; p is an offset in the convolution table
                   sx (+ dx (aget ct p))
                   sy (+ dy (aget ct (inc p)))]
-              (if (and (<= 0 sx) (< sx w)
-                       (<= 0 sy) (< sy h))
+              ; For some reason clojurescript insists on creating an anon fn
+              ; for the `and` block so inline the js for performance and
+              ; ^boolean type hint to prevent call to cljs.core.truth_.
+              (if ^boolean (js* "0 <= ~{} && ~{} < ~{} && 0 <= ~{} && ~{} < ~{}"
+                                       sx     sx    w           sy     sy    h)
+                #_(and (<= 0 sx) (< sx w) (<= 0 sy) (< sy h))
                 (let [soffset (* 4 (+ sx (* w sy)))
                       rs (+ 0 soffset)
                       gs (+ 1 soffset)
