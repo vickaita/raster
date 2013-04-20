@@ -8,6 +8,12 @@
   (dopixels [[r g b a] img]
             [(- 255 r) (- 255 g) (- 255 b) a]))
 
+(defn desaturate
+  [img]
+  (dopixels [[r g b a] img
+             :let [avg (/ (+ r g b) 3)]]
+            [avg avg avg a]))
+
 (defn blur
   [img]
   (c/convolute [0 1 0
