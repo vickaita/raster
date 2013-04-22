@@ -29,6 +29,10 @@
     (into-array (flatten (remove #(= [0 0 0 0] (second %))
                             (map #(vector %1 %2) coords matrix))))))
 
+(comment 
+
 (convolution-table [0 1 0
                     1 1 1
                     0 1 0])
+
+)
